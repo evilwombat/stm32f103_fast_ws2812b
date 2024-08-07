@@ -24,8 +24,8 @@
 
 TIM_HandleTypeDef htimer;
 DMA_HandleTypeDef hdma_tim_update;
-DMA_HandleTypeDef hdma_tim_pwm_ch1;
-DMA_HandleTypeDef hdma_tim_pwm_ch2;
+DMA_HandleTypeDef hdma_tim_pwm_ch_a;
+DMA_HandleTypeDef hdma_tim_pwm_ch_b;
 
 /* Generally you should not need to mess with these */
 #define DMA_BUFFER_SIZE         16
@@ -68,19 +68,30 @@ const static uint8_t ws2812_channel_gpio_map[16] = {
     #define TIMER_CLK_ENABLE        __HAL_RCC_TIM2_CLK_ENABLE
     #define HAL_TIMER_INSTANCE      TIM2
 
+    /*
+     * TIM3 doesn't have a DMA event for CH2, so we have to generalize CH1/CH2 to CH_A / CH_B,
+     * then use CH1/CH2 for TIM2 and TIM4, and CH1/CH3 for TIM3 :/
+    */
+    #define TIMER_CHANNEL_A         TIM_CHANNEL_1
+    #define TIMER_CHANNEL_B         TIM_CHANNEL_2
+    #define TIM_DMA_CC_A            TIM_DMA_CC1
+    #define TIM_DMA_CC_B            TIM_DMA_CC2
+
+
     /* DMA channel numbers for the timer update, Ch1, and Ch2 events */
     #define DMA_CHANNEL_TIM_UP      DMA1_Channel2
-    #define DMA_CHANNEL_TIM_CH1     DMA1_Channel5
-    #define DMA_CHANNEL_TIM_CH2     DMA1_Channel7
+    #define DMA_CHANNEL_TIM_CH_A    DMA1_Channel5
+    #define DMA_CHANNEL_TIM_CH_B    DMA1_Channel7
 
     /* DMA status flags for transfer complete and friends */
-    #define DMA_TIM_CH1_ICFR_FLAGS  (DMA_IFCR_CTCIF5 | DMA_IFCR_CHTIF5)
-    #define DMA_TIM_CH1_TCIF        DMA_ISR_TCIF5
-    #define DMA_TIM_CH1_HTIF        DMA_ISR_HTIF5
+    #define DMA_TIM_CH_A_ICFR_FLAGS (DMA_IFCR_CTCIF5 | DMA_IFCR_CHTIF5)
+    #define DMA_TIM_CH_A_TCIF       DMA_ISR_TCIF5
+    #define DMA_TIM_CH_A_HTIF       DMA_ISR_HTIF5
 
+    /* We don't use DMA interrupts, but be pedantic and define them*/
     #define DMA_IRQ_TIM_UP          DMA1_Channel2_IRQn
-    #define DMA_IRQ_TIM_CH1         DMA1_Channel5_IRQn
-    #define DMA_IRQ_TIM_CH2         DMA1_Channel7_IRQn
+    #define DMA_IRQ_TIM_CH_A        DMA1_Channel5_IRQn
+    #define DMA_IRQ_TIM_CH_B        DMA1_Channel7_IRQn
 #else
     #error "Unsupported tiemr instance. Check that WS2812_TIMER_INSTANCE is set to a supported value"
 #endif
@@ -110,16 +121,16 @@ static void ws2812_timer_init(void)
 
     sConfigOC.OCMode = TIM_OCMODE_PWM1;
 
-    sConfigOC.Pulse = WS2812_TIMER_PWM_CH1_TIME;
+    sConfigOC.Pulse = WS2812_TIMER_PWM_CH_A_TIME;
     sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
     sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-    HAL_TIM_PWM_ConfigChannel(&htimer, &sConfigOC, TIM_CHANNEL_1);
+    HAL_TIM_PWM_ConfigChannel(&htimer, &sConfigOC, TIMER_CHANNEL_A);
     sConfigOC.OCMode = TIM_OCMODE_PWM1;
 
-    sConfigOC.Pulse = WS2812_TIMER_PWM_CH2_TIME;
+    sConfigOC.Pulse = WS2812_TIMER_PWM_CH_B_TIME;
     sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
     sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-    HAL_TIM_PWM_ConfigChannel(&htimer, &sConfigOC, TIM_CHANNEL_2);
+    HAL_TIM_PWM_ConfigChannel(&htimer, &sConfigOC, TIMER_CHANNEL_B);
 }
 
 static void ws2812_dma_start(GPIO_TypeDef *gpio_bank)
@@ -138,41 +149,41 @@ static void ws2812_dma_start(GPIO_TypeDef *gpio_bank)
     hdma_tim_update.Init.Mode = DMA_CIRCULAR;
     hdma_tim_update.Init.Priority = DMA_PRIORITY_VERY_HIGH;
 
-    /* Timer Ch1 Init */
-    hdma_tim_pwm_ch1.Instance = DMA_CHANNEL_TIM_CH1;
-    hdma_tim_pwm_ch1.Init.Direction = DMA_MEMORY_TO_PERIPH;
-    hdma_tim_pwm_ch1.Init.PeriphInc = DMA_PINC_DISABLE;
-    hdma_tim_pwm_ch1.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_tim_pwm_ch1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-    hdma_tim_pwm_ch1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-    hdma_tim_pwm_ch1.Init.Mode = DMA_CIRCULAR;
-    hdma_tim_pwm_ch1.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+    /* Timer Ch A Init */
+    hdma_tim_pwm_ch_a.Instance = DMA_CHANNEL_TIM_CH_A;
+    hdma_tim_pwm_ch_a.Init.Direction = DMA_MEMORY_TO_PERIPH;
+    hdma_tim_pwm_ch_a.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_tim_pwm_ch_a.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_tim_pwm_ch_a.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_tim_pwm_ch_a.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_tim_pwm_ch_a.Init.Mode = DMA_CIRCULAR;
+    hdma_tim_pwm_ch_a.Init.Priority = DMA_PRIORITY_VERY_HIGH;
 
-    /* Timer Ch2 Init */
-    hdma_tim_pwm_ch2.Instance = DMA_CHANNEL_TIM_CH2;
-    hdma_tim_pwm_ch2.Init.Direction = DMA_MEMORY_TO_PERIPH;
-    hdma_tim_pwm_ch2.Init.PeriphInc = DMA_PINC_DISABLE;
-    hdma_tim_pwm_ch2.Init.MemInc = DMA_MINC_DISABLE;
-    hdma_tim_pwm_ch2.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-    hdma_tim_pwm_ch2.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-    hdma_tim_pwm_ch2.Init.Mode = DMA_CIRCULAR;
-    hdma_tim_pwm_ch2.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+    /* Timer Ch B Init */
+    hdma_tim_pwm_ch_b.Instance = DMA_CHANNEL_TIM_CH_B;
+    hdma_tim_pwm_ch_b.Init.Direction = DMA_MEMORY_TO_PERIPH;
+    hdma_tim_pwm_ch_b.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_tim_pwm_ch_b.Init.MemInc = DMA_MINC_DISABLE;
+    hdma_tim_pwm_ch_b.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_tim_pwm_ch_b.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_tim_pwm_ch_b.Init.Mode = DMA_CIRCULAR;
+    hdma_tim_pwm_ch_b.Init.Priority = DMA_PRIORITY_VERY_HIGH;
 
     /* I don't know why, but making all DMAs run as long as the buffer size makes things more
      * efficient. Is it the extra full/half-done flags? Only the 2nd DMA needs to run for a given
      * size ...
      */
     HAL_DMA_Init(&hdma_tim_update);
-    HAL_DMA_Init(&hdma_tim_pwm_ch1);
-    HAL_DMA_Init(&hdma_tim_pwm_ch2);
+    HAL_DMA_Init(&hdma_tim_pwm_ch_a);
+    HAL_DMA_Init(&hdma_tim_pwm_ch_b);
 
     HAL_DMA_Start(&hdma_tim_update, (uint32_t)&ws2812_gpio_set_bits, (uint32_t)&gpio_bank->BSRR, DMA_BUFFER_SIZE);
-	HAL_DMA_Start(&hdma_tim_pwm_ch1, (uint32_t)dma_buffer, (uint32_t) &gpio_bank->BRR, DMA_BUFFER_SIZE);
-    HAL_DMA_Start(&hdma_tim_pwm_ch2, (uint32_t)&ws2812_gpio_set_bits, (uint32_t)&gpio_bank->BRR, DMA_BUFFER_SIZE);
+    HAL_DMA_Start(&hdma_tim_pwm_ch_a, (uint32_t)dma_buffer, (uint32_t) &gpio_bank->BRR, DMA_BUFFER_SIZE);
+    HAL_DMA_Start(&hdma_tim_pwm_ch_b, (uint32_t)&ws2812_gpio_set_bits, (uint32_t)&gpio_bank->BRR, DMA_BUFFER_SIZE);
 
 	__HAL_TIM_ENABLE_DMA(&htimer, TIM_DMA_UPDATE);
-	__HAL_TIM_ENABLE_DMA(&htimer, TIM_DMA_CC1);
-	__HAL_TIM_ENABLE_DMA(&htimer, TIM_DMA_CC2);
+	__HAL_TIM_ENABLE_DMA(&htimer, TIM_DMA_CC_A);
+	__HAL_TIM_ENABLE_DMA(&htimer, TIM_DMA_CC_B);
 }
 
 
@@ -351,8 +362,8 @@ void ws2812_refresh(const struct led_channel_info *channels, GPIO_TypeDef *gpio_
      * timer without any DMA.
      */
 	__HAL_TIM_DISABLE_DMA(&htimer, TIM_DMA_UPDATE);
-	__HAL_TIM_DISABLE_DMA(&htimer, TIM_DMA_CC1);
-	__HAL_TIM_DISABLE_DMA(&htimer, TIM_DMA_CC2);
+	__HAL_TIM_DISABLE_DMA(&htimer, TIM_DMA_CC_A);
+	__HAL_TIM_DISABLE_DMA(&htimer, TIM_DMA_CC_B);
 
     __HAL_TIM_DISABLE(&htimer);
 
@@ -381,14 +392,14 @@ void ws2812_refresh(const struct led_channel_info *channels, GPIO_TypeDef *gpio_
     __HAL_TIM_SET_COUNTER(&htimer, __HAL_TIM_GET_AUTORELOAD(&htimer) - 10);
 
     /* Clear the DMA transfer status flags for the DMA we're using */
-    DMA1->IFCR = DMA_TIM_CH1_ICFR_FLAGS;
+    DMA1->IFCR = DMA_TIM_CH_A_ICFR_FLAGS;
 
     /* Enable the timer.... and so it begins */
     __HAL_TIM_ENABLE(&htimer);
 
     while(1) {
         /* Wait for DMA full-transfer or half-transfer event. This tells us when to fill the next buffer */
-        if (!(DMA1->ISR & (DMA_TIM_CH1_TCIF | DMA_TIM_CH1_HTIF))) {
+        if (!(DMA1->ISR & (DMA_TIM_CH_A_TCIF | DMA_TIM_CH_A_HTIF))) {
             cycles++;
             continue;
         }
@@ -396,11 +407,11 @@ void ws2812_refresh(const struct led_channel_info *channels, GPIO_TypeDef *gpio_
         uint16_t *dest = dma_buffer;
 
         /* Figure out if we're filling the first half of the DMA buffer, or the second half */
-        if (DMA1->ISR & DMA_TIM_CH1_TCIF)
+        if (DMA1->ISR & DMA_TIM_CH_A_TCIF)
             dest += DMA_BUFFER_FILL_SIZE;
 
         /* Clear DMA event flags */
-        DMA1->IFCR = DMA_TIM_CH1_ICFR_FLAGS;
+        DMA1->IFCR = DMA_TIM_CH_A_ICFR_FLAGS;
 
         /* Unpack one new byte from each channel, into eight words in our DMA buffer
          * Each 16-bit word in the DMA buffer contains to one bit of the output byte (from each channel)
@@ -420,8 +431,8 @@ void ws2812_refresh(const struct led_channel_info *channels, GPIO_TypeDef *gpio_
     gpio_bank->BRR = ws2812_gpio_set_bits;
 
 	__HAL_DMA_DISABLE(&hdma_tim_update);
-	__HAL_DMA_DISABLE(&hdma_tim_pwm_ch1);
-	__HAL_DMA_DISABLE(&hdma_tim_pwm_ch2);
+	__HAL_DMA_DISABLE(&hdma_tim_pwm_ch_a);
+	__HAL_DMA_DISABLE(&hdma_tim_pwm_ch_b);
 }
 
 void ws2812_init()
@@ -431,8 +442,8 @@ void ws2812_init()
 
     /* DMA interrupt init, not that we're using it... */
     HAL_NVIC_SetPriority(DMA_IRQ_TIM_UP, 0, 0);
-    HAL_NVIC_SetPriority(DMA_IRQ_TIM_CH1, 0, 0);
-    HAL_NVIC_SetPriority(DMA_IRQ_TIM_CH2, 0, 0);
+    HAL_NVIC_SetPriority(DMA_IRQ_TIM_CH_A, 0, 0);
+    HAL_NVIC_SetPriority(DMA_IRQ_TIM_CH_B, 0, 0);
 
     ws2812_timer_init();
 }
