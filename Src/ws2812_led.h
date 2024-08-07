@@ -33,13 +33,13 @@ struct led_channel_info {
     int length;
 };
 
-/* We assume Timer2 runs at 72MHz (the maximum). If yours runs at a different rate, set it here. */
-#define TIMER2_FREQ_HZ          72000000
+/* We assume our Timer runs at 72MHz (the maximum). If yours runs at a different rate, set it here. */
+#define WS2812_TIMER_FREQ_HZ          72000000
 
 /* Calculate TIM2 period, CH1 pulse width, and CH2 pulse width to be 1.25uS, 0.4uS, and 0.8uS */
-#define WS2812_TIMER_PERIOD        (((TIMER2_FREQ_HZ / 1000) * 125) / 100000)
-#define WS2812_TIMER_PWM_CH1_TIME  (((TIMER2_FREQ_HZ / 1000) *  40) / 100000)
-#define WS2812_TIMER_PWM_CH2_TIME  (((TIMER2_FREQ_HZ / 1000) *  80) / 100000)
+#define WS2812_TIMER_PERIOD        (((WS2812_TIMER_FREQ_HZ / 1000) * 125) / 100000)
+#define WS2812_TIMER_PWM_CH1_TIME  (((WS2812_TIMER_FREQ_HZ / 1000) *  40) / 100000)
+#define WS2812_TIMER_PWM_CH2_TIME  (((WS2812_TIMER_FREQ_HZ / 1000) *  80) / 100000)
 
 /* How many channels (strips) of LEDs we want to control. This must not exceed 16. */
 #define WS2812_NUM_CHANNELS     16

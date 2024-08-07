@@ -22,10 +22,10 @@
 #include <string.h>
 #include "ws2812_led.h"
 
-TIM_HandleTypeDef htimer2;
-DMA_HandleTypeDef hdma_tim2_update;
-DMA_HandleTypeDef hdma_tim2_pwm_ch1;
-DMA_HandleTypeDef hdma_tim2_pwm_ch2;
+TIM_HandleTypeDef htimer;
+DMA_HandleTypeDef hdma_tim_update;
+DMA_HandleTypeDef hdma_tim_pwm_ch1;
+DMA_HandleTypeDef hdma_tim_pwm_ch2;
 
 /* Generally you should not need to mess with these */
 #define DMA_BUFFER_SIZE         16
@@ -58,40 +58,40 @@ const static uint8_t ws2812_channel_gpio_map[16] = {
     WS2812_CH15_GPIO
 };
 
-static void ws2812_timer2_init(void)
+static void ws2812_timer_init(void)
 {
     TIM_ClockConfigTypeDef sClockSourceConfig = {0};
     TIM_MasterConfigTypeDef sMasterConfig = {0};
     TIM_OC_InitTypeDef sConfigOC = {0};
 
-    htimer2.Instance = TIM2;
-    htimer2.Init.Prescaler = 0;
-    htimer2.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htimer2.Init.Period = WS2812_TIMER_PERIOD;
+    htimer.Instance = TIM2;
+    htimer.Init.Prescaler = 0;
+    htimer.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htimer.Init.Period = WS2812_TIMER_PERIOD;
 
-    htimer2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    htimer2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    HAL_TIM_Base_Init(&htimer2);
+    htimer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htimer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    HAL_TIM_Base_Init(&htimer);
 
     sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-    HAL_TIM_ConfigClockSource(&htimer2, &sClockSourceConfig);
-    HAL_TIM_PWM_Init(&htimer2);
+    HAL_TIM_ConfigClockSource(&htimer, &sClockSourceConfig);
+    HAL_TIM_PWM_Init(&htimer);
     sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
     sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-    HAL_TIMEx_MasterConfigSynchronization(&htimer2, &sMasterConfig);
+    HAL_TIMEx_MasterConfigSynchronization(&htimer, &sMasterConfig);
 
     sConfigOC.OCMode = TIM_OCMODE_PWM1;
 
     sConfigOC.Pulse = WS2812_TIMER_PWM_CH1_TIME;
     sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
     sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-    HAL_TIM_PWM_ConfigChannel(&htimer2, &sConfigOC, TIM_CHANNEL_1);
+    HAL_TIM_PWM_ConfigChannel(&htimer, &sConfigOC, TIM_CHANNEL_1);
     sConfigOC.OCMode = TIM_OCMODE_PWM1;
 
     sConfigOC.Pulse = WS2812_TIMER_PWM_CH2_TIME;
     sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
     sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-    HAL_TIM_PWM_ConfigChannel(&htimer2, &sConfigOC, TIM_CHANNEL_2);
+    HAL_TIM_PWM_ConfigChannel(&htimer, &sConfigOC, TIM_CHANNEL_2);
 }
 
 static void ws2812_dma_start(GPIO_TypeDef *gpio_bank)
@@ -99,52 +99,52 @@ static void ws2812_dma_start(GPIO_TypeDef *gpio_bank)
     /* Peripheral clock enable */
     __HAL_RCC_TIM2_CLK_ENABLE();
 
-    /* TIM2 DMA Init */
-    /* TIM2_UP Init */
-    hdma_tim2_update.Instance = DMA1_Channel2;
-    hdma_tim2_update.Init.Direction = DMA_MEMORY_TO_PERIPH;
-    hdma_tim2_update.Init.PeriphInc = DMA_PINC_DISABLE;
-    hdma_tim2_update.Init.MemInc = DMA_MINC_DISABLE;
-    hdma_tim2_update.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-    hdma_tim2_update.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-    hdma_tim2_update.Init.Mode = DMA_CIRCULAR;
-    hdma_tim2_update.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+    /* Timer DMA Init */
+    /* Timer Update Init */
+    hdma_tim_update.Instance = DMA1_Channel2;
+    hdma_tim_update.Init.Direction = DMA_MEMORY_TO_PERIPH;
+    hdma_tim_update.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_tim_update.Init.MemInc = DMA_MINC_DISABLE;
+    hdma_tim_update.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_tim_update.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_tim_update.Init.Mode = DMA_CIRCULAR;
+    hdma_tim_update.Init.Priority = DMA_PRIORITY_VERY_HIGH;
 
-    /* TIM2_CH1 Init */
-    hdma_tim2_pwm_ch1.Instance = DMA1_Channel5;
-    hdma_tim2_pwm_ch1.Init.Direction = DMA_MEMORY_TO_PERIPH;
-    hdma_tim2_pwm_ch1.Init.PeriphInc = DMA_PINC_DISABLE;
-    hdma_tim2_pwm_ch1.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_tim2_pwm_ch1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-    hdma_tim2_pwm_ch1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-    hdma_tim2_pwm_ch1.Init.Mode = DMA_CIRCULAR;
-    hdma_tim2_pwm_ch1.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+    /* Timer Ch1 Init */
+    hdma_tim_pwm_ch1.Instance = DMA1_Channel5;
+    hdma_tim_pwm_ch1.Init.Direction = DMA_MEMORY_TO_PERIPH;
+    hdma_tim_pwm_ch1.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_tim_pwm_ch1.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_tim_pwm_ch1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_tim_pwm_ch1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_tim_pwm_ch1.Init.Mode = DMA_CIRCULAR;
+    hdma_tim_pwm_ch1.Init.Priority = DMA_PRIORITY_VERY_HIGH;
 
-    /* TIM2_CH2_CH4 Init */
-    hdma_tim2_pwm_ch2.Instance = DMA1_Channel7;
-    hdma_tim2_pwm_ch2.Init.Direction = DMA_MEMORY_TO_PERIPH;
-    hdma_tim2_pwm_ch2.Init.PeriphInc = DMA_PINC_DISABLE;
-    hdma_tim2_pwm_ch2.Init.MemInc = DMA_MINC_DISABLE;
-    hdma_tim2_pwm_ch2.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-    hdma_tim2_pwm_ch2.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-    hdma_tim2_pwm_ch2.Init.Mode = DMA_CIRCULAR;
-    hdma_tim2_pwm_ch2.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+    /* Timer Ch2 Init */
+    hdma_tim_pwm_ch2.Instance = DMA1_Channel7;
+    hdma_tim_pwm_ch2.Init.Direction = DMA_MEMORY_TO_PERIPH;
+    hdma_tim_pwm_ch2.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_tim_pwm_ch2.Init.MemInc = DMA_MINC_DISABLE;
+    hdma_tim_pwm_ch2.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_tim_pwm_ch2.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_tim_pwm_ch2.Init.Mode = DMA_CIRCULAR;
+    hdma_tim_pwm_ch2.Init.Priority = DMA_PRIORITY_VERY_HIGH;
 
     /* I don't know why, but making all DMAs run as long as the buffer size makes things more
      * efficient. Is it the extra full/half-done flags? Only the 2nd DMA needs to run for a given
      * size ...
      */
-    HAL_DMA_Init(&hdma_tim2_update);
-    HAL_DMA_Init(&hdma_tim2_pwm_ch1);
-    HAL_DMA_Init(&hdma_tim2_pwm_ch2);
+    HAL_DMA_Init(&hdma_tim_update);
+    HAL_DMA_Init(&hdma_tim_pwm_ch1);
+    HAL_DMA_Init(&hdma_tim_pwm_ch2);
 
-    HAL_DMA_Start(&hdma_tim2_update, (uint32_t)&ws2812_gpio_set_bits, (uint32_t)&gpio_bank->BSRR, DMA_BUFFER_SIZE);
-	HAL_DMA_Start(&hdma_tim2_pwm_ch1, (uint32_t)dma_buffer, (uint32_t) &gpio_bank->BRR, DMA_BUFFER_SIZE);
-    HAL_DMA_Start(&hdma_tim2_pwm_ch2, (uint32_t)&ws2812_gpio_set_bits, (uint32_t)&gpio_bank->BRR, DMA_BUFFER_SIZE);
+    HAL_DMA_Start(&hdma_tim_update, (uint32_t)&ws2812_gpio_set_bits, (uint32_t)&gpio_bank->BSRR, DMA_BUFFER_SIZE);
+	HAL_DMA_Start(&hdma_tim_pwm_ch1, (uint32_t)dma_buffer, (uint32_t) &gpio_bank->BRR, DMA_BUFFER_SIZE);
+    HAL_DMA_Start(&hdma_tim_pwm_ch2, (uint32_t)&ws2812_gpio_set_bits, (uint32_t)&gpio_bank->BRR, DMA_BUFFER_SIZE);
 
-	__HAL_TIM_ENABLE_DMA(&htimer2, TIM_DMA_UPDATE);
-	__HAL_TIM_ENABLE_DMA(&htimer2, TIM_DMA_CC1);
-	__HAL_TIM_ENABLE_DMA(&htimer2, TIM_DMA_CC2);
+	__HAL_TIM_ENABLE_DMA(&htimer, TIM_DMA_UPDATE);
+	__HAL_TIM_ENABLE_DMA(&htimer, TIM_DMA_CC1);
+	__HAL_TIM_ENABLE_DMA(&htimer, TIM_DMA_CC2);
 }
 
 
@@ -322,41 +322,41 @@ void ws2812_refresh(const struct led_channel_info *channels, GPIO_TypeDef *gpio_
     /* We're going to use our standard timer to generate the RESET pulse, so for now just run the
      * timer without any DMA.
      */
-	__HAL_TIM_DISABLE_DMA(&htimer2, TIM_DMA_UPDATE);
-	__HAL_TIM_DISABLE_DMA(&htimer2, TIM_DMA_CC1);
-	__HAL_TIM_DISABLE_DMA(&htimer2, TIM_DMA_CC2);
+	__HAL_TIM_DISABLE_DMA(&htimer, TIM_DMA_UPDATE);
+	__HAL_TIM_DISABLE_DMA(&htimer, TIM_DMA_CC1);
+	__HAL_TIM_DISABLE_DMA(&htimer, TIM_DMA_CC2);
 
-    __HAL_TIM_DISABLE(&htimer2);
+    __HAL_TIM_DISABLE(&htimer);
 
     /* Set all LED GPIOs to 0, to begin reset pulse */
     gpio_bank->BRR = ws2812_gpio_set_bits;
 
-    __HAL_TIM_ENABLE(&htimer2);
+    __HAL_TIM_ENABLE(&htimer);
 
     /* We know the timer overflows every 1.25uS (our bit-time interval). So rather than
      * reprogram the timer for 280uS (reset pulse duration) and back, we're gonna be lazy
      * and just count out ~225 update intervals
      */
     for (i = 0; i < 225; i++) {
-        while (!__HAL_TIM_GET_FLAG(&htimer2, TIM_FLAG_UPDATE));
-        __HAL_TIM_CLEAR_FLAG(&htimer2, TIM_FLAG_UPDATE);
+        while (!__HAL_TIM_GET_FLAG(&htimer, TIM_FLAG_UPDATE));
+        __HAL_TIM_CLEAR_FLAG(&htimer, TIM_FLAG_UPDATE);
     }
 
     /* Now that we're done with the RESET pulse, turn off the timer and prepare the DMA stuff */
-    __HAL_TIM_DISABLE(&htimer2);
+    __HAL_TIM_DISABLE(&htimer);
     ws2812_dma_start(gpio_bank);
 
     /* We set the timer to juuust before the overflow condition, so that the UPDATE event happens
      * before the CH1 / CH2 match events. We want this so that the UPDATE event gives us a clean
      * starting "high" level for the first edge of the first bit.
      */
-    __HAL_TIM_SET_COUNTER(&htimer2, __HAL_TIM_GET_AUTORELOAD(&htimer2) - 10);
+    __HAL_TIM_SET_COUNTER(&htimer, __HAL_TIM_GET_AUTORELOAD(&htimer) - 10);
 
     /* Clear the DMA transfer status flags for the DMA we're using */
     DMA1->IFCR = (DMA_IFCR_CTCIF5 | DMA_IFCR_CHTIF5);
 
     /* Enable the timer.... and so it begins */
-    __HAL_TIM_ENABLE(&htimer2);
+    __HAL_TIM_ENABLE(&htimer);
 
     while(1) {
         /* Wait for DMA full-transfer or half-transfer event. This tells us when to fill the next buffer */
@@ -386,14 +386,14 @@ void ws2812_refresh(const struct led_channel_info *channels, GPIO_TypeDef *gpio_
             break;
     }
 
-    __HAL_TIM_DISABLE(&htimer2);
+    __HAL_TIM_DISABLE(&htimer);
 
     /* Set all LED GPIOs back to 0 */
     gpio_bank->BRR = ws2812_gpio_set_bits;
 
-	__HAL_DMA_DISABLE(&hdma_tim2_update);
-	__HAL_DMA_DISABLE(&hdma_tim2_pwm_ch1);
-	__HAL_DMA_DISABLE(&hdma_tim2_pwm_ch2);
+	__HAL_DMA_DISABLE(&hdma_tim_update);
+	__HAL_DMA_DISABLE(&hdma_tim_pwm_ch1);
+	__HAL_DMA_DISABLE(&hdma_tim_pwm_ch2);
 }
 
 void ws2812_init()
@@ -406,5 +406,5 @@ void ws2812_init()
     HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 0, 0);
     HAL_NVIC_SetPriority(DMA1_Channel7_IRQn, 0, 0);
 
-    ws2812_timer2_init();
+    ws2812_timer_init();
 }
