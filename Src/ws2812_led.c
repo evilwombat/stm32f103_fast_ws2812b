@@ -132,6 +132,7 @@ const static uint8_t ws2812_channel_gpio_map[16] = {
 
 static void ws2812_timer_init(void)
 {
+    TIMER_CLK_ENABLE();
     TIM_ClockConfigTypeDef sClockSourceConfig = {0};
     TIM_MasterConfigTypeDef sMasterConfig = {0};
     TIM_OC_InitTypeDef sConfigOC = {0};
