@@ -92,6 +92,39 @@ const static uint8_t ws2812_channel_gpio_map[16] = {
     #define DMA_IRQ_TIM_UP          DMA1_Channel2_IRQn
     #define DMA_IRQ_TIM_CH_A        DMA1_Channel5_IRQn
     #define DMA_IRQ_TIM_CH_B        DMA1_Channel7_IRQn
+#elif WS2812_TIMER_INSTANCE == 3
+    #define TIMER_CLK_ENABLE        __HAL_RCC_TIM3_CLK_ENABLE
+    #define HAL_TIMER_INSTANCE      TIM3
+    #define TIMER_CHANNEL_A         TIM_CHANNEL_1
+    /* TIM3 doesn't have a DMA-capable CH2, so we use CH3 instead */
+    #define TIMER_CHANNEL_B         TIM_CHANNEL_3
+    #define TIM_DMA_CC_A            TIM_DMA_CC1
+    #define TIM_DMA_CC_B            TIM_DMA_CC3
+    #define DMA_CHANNEL_TIM_UP      DMA1_Channel3
+    #define DMA_CHANNEL_TIM_CH_A    DMA1_Channel6
+    #define DMA_CHANNEL_TIM_CH_B    DMA1_Channel2
+    #define DMA_TIM_CH_A_ICFR_FLAGS (DMA_IFCR_CTCIF6 | DMA_IFCR_CHTIF6)
+    #define DMA_TIM_CH_A_TCIF       DMA_ISR_TCIF6
+    #define DMA_TIM_CH_A_HTIF       DMA_ISR_HTIF6
+    #define DMA_IRQ_TIM_UP          DMA1_Channel3_IRQn
+    #define DMA_IRQ_TIM_CH_A        DMA1_Channel6_IRQn
+    #define DMA_IRQ_TIM_CH_B        DMA1_Channel2_IRQn
+#elif WS2812_TIMER_INSTANCE == 4
+    #define TIMER_CLK_ENABLE        __HAL_RCC_TIM4_CLK_ENABLE
+    #define HAL_TIMER_INSTANCE      TIM4
+    #define TIMER_CHANNEL_A         TIM_CHANNEL_1
+    #define TIMER_CHANNEL_B         TIM_CHANNEL_2
+    #define TIM_DMA_CC_A            TIM_DMA_CC1
+    #define TIM_DMA_CC_B            TIM_DMA_CC2
+    #define DMA_CHANNEL_TIM_UP      DMA1_Channel7
+    #define DMA_CHANNEL_TIM_CH_A    DMA1_Channel1
+    #define DMA_CHANNEL_TIM_CH_B    DMA1_Channel4
+    #define DMA_TIM_CH_A_ICFR_FLAGS (DMA_IFCR_CTCIF1 | DMA_IFCR_CHTIF1)
+    #define DMA_TIM_CH_A_TCIF       DMA_ISR_TCIF1
+    #define DMA_TIM_CH_A_HTIF       DMA_ISR_HTIF1
+    #define DMA_IRQ_TIM_UP          DMA1_Channel7_IRQn
+    #define DMA_IRQ_TIM_CH_A        DMA1_Channel1_IRQn
+    #define DMA_IRQ_TIM_CH_B        DMA1_Channel4_IRQn
 #else
     #error "Unsupported tiemr instance. Check that WS2812_TIMER_INSTANCE is set to a supported value"
 #endif

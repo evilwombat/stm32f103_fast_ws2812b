@@ -33,6 +33,7 @@ All your LED channels must be connected to the **same GPIO bank** (ie, all LEDs 
 Next, you'll need to set up your **channel array**. This is an array of *struct led_channel_info* and its length **must** be WS2812_NUM_CHANNELS. This array contains the framebuffer pointer for each channel, as well as the length of the framebuffer for that channel. Unused channels should have their length set to 0. Note that framebuffer lengths are **in bytes**, rather than in terms of number of pixels. This is because some LEDs want 3 bytes (R, G, B) and other types of LEDs want 4 bytes (R, G, B, W). The library doesn't actually care what kind of LEDs you're talking to, as long as you've laid out your framebuffers in a way that your LEDs expect.
 
 Next, you'll want to call **ws2812_init()**. This sets up Timer2 and all the DMA channels, but it doesn't send out any data yet.
+If you are using Timer2 for some other purpose, you can select a different timer by editing a macro in ws2812_led.h.
 
 Then, we **disable interrupts**, call **ws2812_refresh()**, passing in our channel array, and the GPIO bank we want to use. Finally, we may (optionally) re-enable interrupts.
 

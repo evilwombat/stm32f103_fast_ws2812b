@@ -38,7 +38,7 @@ struct led_channel_info {
  * WS2812 LEDs. Select the timer that will be used for this purpse, to de-conflict it with
  * other timers that may be more desireable for other uses.
  *
- * Supported values: 2
+ * Supported values: 2, 3, 4
  */
 #define WS2812_TIMER_INSTANCE 2
 
