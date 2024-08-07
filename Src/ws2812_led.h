@@ -33,6 +33,15 @@ struct led_channel_info {
     int length;
 };
 
+/*
+ * Timer selection. STM32F1 has three general-purpose timers that we can use for driving
+ * WS2812 LEDs. Select the timer that will be used for this purpse, to de-conflict it with
+ * other timers that may be more desireable for other uses.
+ *
+ * Supported values: 2
+ */
+#define WS2812_TIMER_INSTANCE 2
+
 /* We assume our Timer runs at 72MHz (the maximum). If yours runs at a different rate, set it here. */
 #define WS2812_TIMER_FREQ_HZ          72000000
 
